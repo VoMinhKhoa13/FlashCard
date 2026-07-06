@@ -57,8 +57,21 @@ export default function FlashcardViewer({ cards }: FlashcardViewerProps) {
     if (typeof window !== "undefined" && window.speechSynthesis) {
       // Cancel previous speaking tasks
       window.speechSynthesis.cancel();
+      
       const utterance = new SpeechSynthesisUtterance(word);
       utterance.lang = "en-US";
+
+      // Explicitly locate and force an English voice to prevent Vietnamese browser engine fallback
+      const voices = window.speechSynthesis.getVoices();
+      const englishVoice = 
+        voices.find((v) => v.lang === "en-US") ||
+        voices.find((v) => v.lang.startsWith("en-")) ||
+        voices.find((v) => v.lang.startsWith("en"));
+
+      if (englishVoice) {
+        utterance.voice = englishVoice;
+      }
+      
       utterance.rate = 0.85; // Slightly slower for clear learning
       window.speechSynthesis.speak(utterance);
     }
