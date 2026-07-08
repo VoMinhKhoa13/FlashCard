@@ -85,7 +85,7 @@ export default function Navbar({
                       : "text-slate-500 hover:text-indigo-650 dark:text-slate-400 dark:hover:text-indigo-350"
                   }`}
                 >
-                  Tự gõ
+                  Luyện Viết
                 </button>
                 <button
                   onClick={() => setMode("quiz")}
