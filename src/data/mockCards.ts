@@ -15,6 +15,13 @@ export interface Card {
   quiz: Quiz;
 }
 
+export interface Lesson {
+  id: string;
+  name: string;
+  createdAt: number;
+  cards: Card[];
+}
+
 export const mockCards: Card[] = [
   {
     id: "card_1",

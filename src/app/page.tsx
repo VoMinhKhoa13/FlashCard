@@ -5,23 +5,33 @@ import Navbar from "@/components/Navbar";
 import UploadZone from "@/components/UploadZone";
 import FlashcardViewer from "@/components/FlashcardViewer";
 import QuizViewer from "@/components/QuizViewer";
-import { Card } from "@/data/mockCards";
+import { Card, Lesson } from "@/data/mockCards";
 
 export default function Home() {
-  const [cards, setCards] = useState<Card[]>([]);
+  const [lessons, setLessons] = useState<Lesson[]>([]);
+  const [activeLessonId, setActiveLessonId] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
   const [mode, setMode] = useState<"study" | "quiz">("study");
   const [loading, setLoading] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
 
-  // Load state from localStorage on client mount
+  // Load state from localStorage on client mount (hydration safe)
   useEffect(() => {
     if (typeof window !== "undefined") {
       try {
-        const cachedCards = localStorage.getItem("ai_flashcards");
-        const cachedMode = localStorage.getItem("ai_flashcards_mode");
+        const cachedLessons = localStorage.getItem("ai_lessons");
+        const cachedActiveId = localStorage.getItem("ai_lessons_active_id");
+        const cachedMode = localStorage.getItem("ai_lessons_mode");
         
-        if (cachedCards) {
-          setCards(JSON.parse(cachedCards));
+        if (cachedLessons) {
+          const parsedLessons: Lesson[] = JSON.parse(cachedLessons);
+          setLessons(parsedLessons);
+          
+          if (cachedActiveId && parsedLessons.some(l => l.id === cachedActiveId)) {
+            setActiveLessonId(cachedActiveId);
+          } else if (parsedLessons.length > 0) {
+            setActiveLessonId(parsedLessons[0].id);
+          }
         }
         if (cachedMode === "study" || cachedMode === "quiz") {
           setMode(cachedMode);
@@ -34,30 +44,53 @@ export default function Home() {
     }
   }, []);
 
-  // Save state to localStorage whenever cards or mode changes (after initial load)
+  // Save state to localStorage when lessons, activeLessonId, or mode changes
   useEffect(() => {
     if (isLoaded && typeof window !== "undefined") {
       try {
-        localStorage.setItem("ai_flashcards", JSON.stringify(cards));
-        localStorage.setItem("ai_flashcards_mode", mode);
+        localStorage.setItem("ai_lessons", JSON.stringify(lessons));
+        if (activeLessonId) {
+          localStorage.setItem("ai_lessons_active_id", activeLessonId);
+        } else {
+          localStorage.removeItem("ai_lessons_active_id");
+        }
+        localStorage.setItem("ai_lessons_mode", mode);
       } catch (err) {
         console.error("Lỗi khi ghi localStorage:", err);
       }
     }
-  }, [cards, mode, isLoaded]);
+  }, [lessons, activeLessonId, mode, isLoaded]);
 
-  const handleCardsLoaded = (newCards: Card[]) => {
-    setCards(newCards);
-    setMode("study"); // Reset to study mode when new cards are loaded
+  const handleLessonCreated = (name: string, cards: Card[]) => {
+    const newLesson: Lesson = {
+      id: `lesson_${Date.now()}`,
+      name: name,
+      createdAt: Date.now(),
+      cards: cards,
+    };
+    
+    setLessons((prev) => [...prev, newLesson]);
+    setActiveLessonId(newLesson.id);
+    setIsUploading(false);
+    setMode("study"); // Default to flashcard view for the new lesson
   };
 
-  const handleClear = () => {
-    if (window.confirm("Bạn có chắc chắn muốn xóa toàn bộ danh sách từ vựng hiện tại?")) {
-      setCards([]);
-      setMode("study");
-      if (typeof window !== "undefined") {
-        localStorage.removeItem("ai_flashcards");
+  const handleDeleteActiveLesson = (id: string) => {
+    const lessonToDelete = lessons.find((l) => l.id === id);
+    if (!lessonToDelete) return;
+
+    if (window.confirm(`Bạn có chắc chắn muốn xóa toàn bộ bài học "${lessonToDelete.name}"?`)) {
+      const updatedLessons = lessons.filter((l) => l.id !== id);
+      setLessons(updatedLessons);
+      
+      if (updatedLessons.length > 0) {
+        // Set active lesson to the most recent remaining lesson
+        setActiveLessonId(updatedLessons[updatedLessons.length - 1].id);
+      } else {
+        setActiveLessonId(null);
+        setIsUploading(false); // If no lessons left, default to upload screen
       }
+      setMode("study");
     }
   };
 
@@ -70,12 +103,14 @@ export default function Home() {
     );
   }
 
-  const hasCards = cards.length > 0;
+  const activeLesson = lessons.find((l) => l.id === activeLessonId);
+  const hasLessons = lessons.length > 0;
+  const showUpload = !hasLessons || isUploading;
 
   return (
     <div className="min-h-screen flex flex-col relative bg-slate-50/50 dark:bg-[#090d16] transition-colors duration-300">
       
-      {/* Premium ambient light background blobs */}
+      {/* Ambient light background blobs */}
       <div className="absolute top-[-10%] left-[-10%] w-[50vw] h-[50vw] rounded-full bg-indigo-200/30 dark:bg-indigo-900/10 blur-[120px] pointer-events-none" />
       <div className="absolute bottom-[-10%] right-[-10%] w-[50vw] h-[50vw] rounded-full bg-rose-200/20 dark:bg-rose-900/10 blur-[120px] pointer-events-none" />
 
@@ -83,24 +118,32 @@ export default function Home() {
       <Navbar
         mode={mode}
         setMode={setMode}
-        hasCards={hasCards}
-        onClear={handleClear}
+        lessons={lessons}
+        activeLessonId={activeLessonId}
+        setActiveLessonId={setActiveLessonId}
+        isUploading={isUploading}
+        setIsUploading={setIsUploading}
+        onDeleteLesson={handleDeleteActiveLesson}
       />
 
       {/* Main Content Area */}
       <main className="flex-1 flex flex-col justify-center py-12 sm:py-16 relative z-10">
-        {!hasCards ? (
+        {showUpload ? (
           <UploadZone
-            onCardsLoaded={handleCardsLoaded}
+            onLessonCreated={handleLessonCreated}
             loading={loading}
             setLoading={setLoading}
+            hasExistingLessons={hasLessons}
+            onCancel={() => setIsUploading(false)}
           />
         ) : (
           <div className="w-full transition-all duration-500 ease-in-out">
-            {mode === "study" ? (
-              <FlashcardViewer cards={cards} />
-            ) : (
-              <QuizViewer cards={cards} />
+            {activeLesson && (
+              mode === "study" ? (
+                <FlashcardViewer key={`study-${activeLesson.id}`} cards={activeLesson.cards} />
+              ) : (
+                <QuizViewer key={`quiz-${activeLesson.id}`} cards={activeLesson.cards} />
+              )
             )}
           </div>
         )}

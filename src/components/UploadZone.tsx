@@ -1,19 +1,43 @@
 "use client";
 
 import React, { useState, useRef } from "react";
-import { Upload, Loader2, Image as ImageIcon, Sparkles, AlertCircle } from "lucide-react";
+import { Upload, Loader2, Image as ImageIcon, Sparkles, AlertCircle, FileText, Check, X } from "lucide-react";
 import { Card, mockCards } from "@/data/mockCards";
 
 interface UploadZoneProps {
-  onCardsLoaded: (cards: Card[]) => void;
+  onLessonCreated: (name: string, cards: Card[]) => void;
   loading: boolean;
   setLoading: (loading: boolean) => void;
+  hasExistingLessons: boolean;
+  onCancel: () => void;
 }
 
-export default function UploadZone({ onCardsLoaded, loading, setLoading }: UploadZoneProps) {
+export default function UploadZone({
+  onLessonCreated,
+  loading,
+  setLoading,
+  hasExistingLessons,
+  onCancel,
+}: UploadZoneProps) {
   const [isDragActive, setIsDragActive] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [tempCards, setTempCards] = useState<Card[] | null>(null);
+  const [lessonName, setLessonName] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const getDefaultName = (prefix: string) => {
+    const now = new Date();
+    const dateStr = now.toLocaleDateString("vi-VN", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    });
+    const timeStr = now.toLocaleTimeString("vi-VN", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+    return `${prefix} (${dateStr} - ${timeStr})`;
+  };
 
   const processFile = async (file: File) => {
     if (!file.type.startsWith("image/")) {
@@ -44,7 +68,8 @@ export default function UploadZone({ onCardsLoaded, loading, setLoading }: Uploa
         }
 
         if (data.cards && data.cards.length > 0) {
-          onCardsLoaded(data.cards);
+          setTempCards(data.cards);
+          setLessonName(getDefaultName("Bài học mới"));
         } else {
           throw new Error("Không thể trích xuất được từ vựng nào từ hình ảnh này.");
         }
@@ -97,11 +122,19 @@ export default function UploadZone({ onCardsLoaded, loading, setLoading }: Uploa
   const loadMockData = () => {
     setLoading(true);
     setErrorMsg(null);
-    // Simulate short delay for premium feel loading state
     setTimeout(() => {
-      onCardsLoaded(mockCards);
+      setTempCards(mockCards);
+      setLessonName(getDefaultName("Bài học mẫu"));
       setLoading(false);
-    }, 1500);
+    }, 1200);
+  };
+
+  const handleSaveLesson = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!lessonName.trim() || !tempCards) return;
+    onLessonCreated(lessonName.trim(), tempCards);
+    setTempCards(null);
+    setLessonName("");
   };
 
   return (
@@ -117,17 +150,19 @@ export default function UploadZone({ onCardsLoaded, loading, setLoading }: Uploa
         </div>
       )}
 
-      {/* Main Dropzone Card */}
+      {/* Main Container */}
       <div
-        onDragEnter={handleDrag}
-        onDragOver={handleDrag}
-        onDragLeave={handleDrag}
-        onDrop={handleDrop}
-        className={`relative overflow-hidden rounded-3xl border-2 border-dashed transition-all duration-300 p-8 sm:p-12 text-center flex flex-col items-center justify-center min-h-[350px] ${
-          isDragActive
-            ? "border-indigo-500 bg-indigo-50/30 dark:bg-indigo-950/10 scale-[1.01]"
-            : "border-slate-300 dark:border-slate-700 hover:border-indigo-400/80 hover:bg-slate-50/50 dark:hover:bg-slate-900/20"
-        } glass-card`}
+        onDragEnter={tempCards ? undefined : handleDrag}
+        onDragOver={tempCards ? undefined : handleDrag}
+        onDragLeave={tempCards ? undefined : handleDrag}
+        onDrop={tempCards ? undefined : handleDrop}
+        className={`relative overflow-hidden rounded-3xl border-2 transition-all duration-300 p-8 sm:p-12 text-center flex flex-col items-center justify-center min-h-[380px] glass-card ${
+          tempCards
+            ? "border-indigo-200 dark:border-slate-800"
+            : isDragActive
+            ? "border-indigo-500 border-dashed bg-indigo-50/30 dark:bg-indigo-950/10 scale-[1.01]"
+            : "border-slate-300 border-dashed dark:border-slate-700 hover:border-indigo-400/80 hover:bg-slate-50/50 dark:hover:bg-slate-900/20"
+        }`}
       >
         <input
           ref={fileInputRef}
@@ -139,7 +174,7 @@ export default function UploadZone({ onCardsLoaded, loading, setLoading }: Uploa
         />
 
         {loading ? (
-          // Loading State
+          // 1. Loading State
           <div className="flex flex-col items-center justify-center space-y-4 animate-pulse">
             <div className="p-4 bg-indigo-50 dark:bg-indigo-950/40 rounded-full text-indigo-600 dark:text-indigo-400 relative">
               <Loader2 className="w-12 h-12 animate-spin" />
@@ -153,31 +188,78 @@ export default function UploadZone({ onCardsLoaded, loading, setLoading }: Uploa
                 AI đang quét hình ảnh, phân tích từ vựng TOEIC và sinh câu hỏi trắc nghiệm thông minh.
               </p>
             </div>
-            {/* Visual Progress Simulator */}
             <div className="w-48 h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-              <div className="h-full bg-gradient-to-r from-indigo-500 to-rose-400 rounded-full animate-[shimmer_1.5s_infinite] w-full" style={{ backgroundSize: '200% 100%' }}></div>
+              <div className="h-full bg-gradient-to-r from-indigo-500 to-rose-400 rounded-full animate-[shimmer_1.5s_infinite] w-full" style={{ backgroundSize: "200% 100%" }}></div>
             </div>
           </div>
+        ) : tempCards ? (
+          // 2. Custom Naming State (Post-Scan)
+          <form onSubmit={handleSaveLesson} className="w-full max-w-md space-y-6 flex flex-col items-center">
+            <div className="p-3.5 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 rounded-2xl">
+              <FileText className="w-8 h-8" />
+            </div>
+            
+            <div className="space-y-1.5 text-center">
+              <h3 className="font-extrabold text-xl text-slate-800 dark:text-slate-100">
+                Lưu bài học mới
+              </h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                AI đã trích xuất thành công <strong className="text-emerald-600 dark:text-emerald-400">{tempCards.length} từ vựng</strong> từ ảnh của bạn. Hãy đặt tên để dễ học lại sau này:
+              </p>
+            </div>
+
+            <div className="w-full space-y-1 text-left">
+              <label htmlFor="lessonName" className="text-xs font-bold text-slate-400 uppercase tracking-wide">
+                Tên bài học
+              </label>
+              <input
+                id="lessonName"
+                type="text"
+                value={lessonName}
+                onChange={(e) => setLessonName(e.target.value)}
+                placeholder="Nhập tên bài học..."
+                required
+                className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 text-sm font-semibold text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-300"
+              />
+            </div>
+
+            <div className="flex gap-3 w-full">
+              <button
+                type="button"
+                onClick={() => setTempCards(null)}
+                className="w-1/2 py-3 rounded-xl font-semibold text-xs bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition-all duration-300 flex items-center justify-center gap-1.5 cursor-pointer"
+              >
+                <X className="w-4 h-4" /> Chọn lại ảnh
+              </button>
+              
+              <button
+                type="submit"
+                className="w-1/2 py-3 rounded-xl font-semibold text-xs bg-gradient-to-r from-indigo-600 to-indigo-500 dark:from-indigo-500 dark:to-indigo-400 text-white shadow-md shadow-indigo-100 dark:shadow-none hover:shadow-lg transition-all duration-300 flex items-center justify-center gap-1.5 cursor-pointer"
+              >
+                <Check className="w-4 h-4" /> Lưu bài học
+              </button>
+            </div>
+          </form>
         ) : (
-          // Default State
+          // 3. Default File Dropzone State
           <div className="flex flex-col items-center justify-center space-y-5">
             <div className="p-4 bg-slate-100 dark:bg-slate-800 rounded-full text-slate-600 dark:text-slate-300">
               <Upload className="w-10 h-10" />
             </div>
             <div className="space-y-1">
               <h3 className="font-bold text-lg text-slate-800 dark:text-slate-200">
-                Tải ảnh sách từ vựng của bạn
+                Tải ảnh sách từ vựng mới
               </h3>
               <p className="text-sm text-slate-500 dark:text-slate-400 max-w-sm">
-                Kéo thả ảnh tại đây hoặc nhấp chuột để chọn ảnh. AI sẽ tự động trích xuất flashcard.
+                Kéo thả ảnh bài học tại đây hoặc nhấp để chọn ảnh. AI sẽ tự động lập bài học riêng.
               </p>
             </div>
 
-            <div className="flex flex-col sm:flex-row gap-3 pt-2 w-full max-w-xs">
+            <div className="flex flex-col sm:flex-row gap-3 pt-2 w-full max-w-xs justify-center items-center">
               <button
                 type="button"
                 onClick={onButtonClick}
-                className="w-full py-2.5 px-4 rounded-xl font-semibold text-sm bg-indigo-600 hover:bg-indigo-500 dark:bg-indigo-500 dark:hover:bg-indigo-400 text-white shadow-md shadow-indigo-200 dark:shadow-none transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer"
+                className="w-full py-2.5 px-4 rounded-xl font-semibold text-sm bg-indigo-600 hover:bg-indigo-500 dark:bg-indigo-50 dark:hover:bg-indigo-400/10 text-white dark:text-indigo-400 border border-transparent dark:border-indigo-900/40 shadow-md shadow-indigo-200 dark:shadow-none transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer"
               >
                 <ImageIcon className="w-4 h-4" /> Chọn ảnh...
               </button>
@@ -187,9 +269,19 @@ export default function UploadZone({ onCardsLoaded, loading, setLoading }: Uploa
                 onClick={loadMockData}
                 className="w-full py-2.5 px-4 rounded-xl font-semibold text-sm bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/80 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 shadow-sm transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer"
               >
-                <Sparkles className="w-4 h-4 text-rose-400" /> Dùng thử mẫu
+                <Sparkles className="w-4 h-4 text-rose-450" /> Dùng thử mẫu
               </button>
             </div>
+
+            {hasExistingLessons && (
+              <button
+                type="button"
+                onClick={onCancel}
+                className="pt-2 text-xs font-bold text-indigo-550 hover:text-indigo-600 dark:text-indigo-400 dark:hover:text-indigo-300 underline cursor-pointer"
+              >
+                Quay lại học tiếp các bài hiện tại
+              </button>
+            )}
           </div>
         )}
       </div>
