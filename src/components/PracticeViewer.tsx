@@ -193,12 +193,12 @@ export default function PracticeViewer({ cards }: PracticeViewerProps) {
               onChange={(e) => setUserAnswer(e.target.value)}
               disabled={hasChecked}
               placeholder="Gõ từ tiếng Anh tương ứng..."
-              className={`w-full px-4 py-3.5 rounded-2xl border text-base font-bold text-center focus:outline-none transition-all duration-300 disabled:opacity-100 ${
+              className={`w-full px-4 py-3.5 rounded-2xl border text-base font-extrabold text-center focus:outline-none transition-all duration-300 disabled:opacity-100 ${
                 hasChecked
                   ? isCorrect
-                    ? "bg-emerald-50/55 dark:bg-emerald-950/20 border-emerald-400 dark:border-emerald-800/50 text-emerald-800 dark:text-emerald-400"
-                    : "bg-rose-50/55 dark:bg-rose-950/20 border-rose-400 dark:border-rose-800/50 text-rose-850 dark:text-rose-400"
-                  : "bg-white dark:bg-slate-900/80 border-slate-200 dark:border-slate-850 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-indigo-500 focus:border-transparent shadow-sm"
+                    ? "bg-emerald-50/50 dark:bg-emerald-950/20 border-emerald-400 dark:border-emerald-800/50 text-emerald-800 dark:text-emerald-400"
+                    : "bg-rose-50/50 dark:bg-rose-950/20 border-rose-400 dark:border-rose-800/50 text-rose-800 dark:text-rose-400"
+                  : "bg-white/70 dark:bg-slate-900/60 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent shadow-sm"
               }`}
             />
             <div className="absolute right-3.5 top-3.5 text-slate-300 dark:text-slate-700 pointer-events-none">
