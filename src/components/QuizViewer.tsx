@@ -114,8 +114,8 @@ export default function QuizViewer({ cards }: QuizViewerProps) {
       {/* Header Info */}
       <div className="flex justify-between items-center text-xs sm:text-sm font-semibold text-slate-500 dark:text-slate-400">
         <span>Câu hỏi: {currentIndex + 1} / {cards.length}</span>
-        <span className="text-[11px] px-2 py-0.5 rounded-md bg-rose-50 dark:bg-rose-955/30 text-rose-600 dark:text-rose-400 border border-rose-100/40">
-          Từ: {currentCard.word} ({currentCard.pos})
+        <span className="text-[11px] px-2 py-0.5 rounded-md bg-rose-50 dark:bg-rose-950/30 text-rose-600 dark:text-rose-400 border border-rose-100/40 uppercase tracking-wider font-bold">
+          Từ loại: {currentCard.pos}
         </span>
       </div>
 

@@ -5,8 +5,8 @@ import { BookOpen, Sparkles, FolderOpen, Plus, Trash2 } from "lucide-react";
 import { Lesson } from "@/data/mockCards";
 
 interface NavbarProps {
-  mode: "study" | "quiz";
-  setMode: (mode: "study" | "quiz") => void;
+  mode: "study" | "practice" | "quiz";
+  setMode: (mode: "study" | "practice" | "quiz") => void;
   lessons: Lesson[];
   activeLessonId: string | null;
   setActiveLessonId: (id: string | null) => void;
@@ -78,10 +78,20 @@ export default function Navbar({
                   Học từ
                 </button>
                 <button
+                  onClick={() => setMode("practice")}
+                  className={`px-2.5 py-1 rounded-lg text-[10px] sm:text-xs font-bold transition-all duration-200 cursor-pointer ${
+                    mode === "practice"
+                      ? "bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm"
+                      : "text-slate-500 hover:text-indigo-650 dark:text-slate-400 dark:hover:text-indigo-350"
+                  }`}
+                >
+                  Tự gõ
+                </button>
+                <button
                   onClick={() => setMode("quiz")}
                   className={`px-2.5 py-1 rounded-lg text-[10px] sm:text-xs font-bold transition-all duration-200 cursor-pointer ${
                     mode === "quiz"
-                      ? "bg-white dark:bg-slate-700 text-rose-600 dark:text-rose-450 shadow-sm"
+                      ? "bg-white dark:bg-slate-700 text-rose-600 dark:text-rose-455 shadow-sm"
                       : "text-slate-500 hover:text-rose-650 dark:text-slate-400 dark:hover:text-rose-350"
                   }`}
                 >

@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import Navbar from "@/components/Navbar";
 import UploadZone from "@/components/UploadZone";
 import FlashcardViewer from "@/components/FlashcardViewer";
+import PracticeViewer from "@/components/PracticeViewer";
 import QuizViewer from "@/components/QuizViewer";
 import { Card, Lesson } from "@/data/mockCards";
 
@@ -11,7 +12,7 @@ export default function Home() {
   const [lessons, setLessons] = useState<Lesson[]>([]);
   const [activeLessonId, setActiveLessonId] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
-  const [mode, setMode] = useState<"study" | "quiz">("study");
+  const [mode, setMode] = useState<"study" | "practice" | "quiz">("study");
   const [loading, setLoading] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
 
@@ -33,7 +34,7 @@ export default function Home() {
             setActiveLessonId(parsedLessons[0].id);
           }
         }
-        if (cachedMode === "study" || cachedMode === "quiz") {
+        if (cachedMode === "study" || cachedMode === "practice" || cachedMode === "quiz") {
           setMode(cachedMode);
         }
       } catch (err) {
@@ -141,6 +142,8 @@ export default function Home() {
             {activeLesson && (
               mode === "study" ? (
                 <FlashcardViewer key={`study-${activeLesson.id}`} cards={activeLesson.cards} />
+              ) : mode === "practice" ? (
+                <PracticeViewer key={`practice-${activeLesson.id}`} cards={activeLesson.cards} />
               ) : (
                 <QuizViewer key={`quiz-${activeLesson.id}`} cards={activeLesson.cards} />
               )
