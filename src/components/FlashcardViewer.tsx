@@ -16,22 +16,18 @@ export default function FlashcardViewer({ cards }: FlashcardViewerProps) {
 
   // Reset flip state when card changes
   const handlePrev = () => {
-    if (currentIndex > 0) {
-      setIsFlipped(false);
-      // Wait for flip transition to finish before changing data
-      setTimeout(() => {
-        setCurrentIndex((prev) => prev - 1);
-      }, 150);
-    }
+    setIsFlipped(false);
+    // Wait for flip transition to finish before changing data
+    setTimeout(() => {
+      setCurrentIndex((prev) => (prev > 0 ? prev - 1 : cards.length - 1));
+    }, 150);
   };
 
   const handleNext = () => {
-    if (currentIndex < cards.length - 1) {
-      setIsFlipped(false);
-      setTimeout(() => {
-        setCurrentIndex((prev) => prev + 1);
-      }, 150);
-    }
+    setIsFlipped(false);
+    setTimeout(() => {
+      setCurrentIndex((prev) => (prev < cards.length - 1 ? prev + 1 : 0));
+    }, 150);
   };
 
   // Keyboard navigation
@@ -195,12 +191,7 @@ export default function FlashcardViewer({ cards }: FlashcardViewerProps) {
       <div className="flex items-center gap-6 mt-2">
         <button
           onClick={handlePrev}
-          disabled={currentIndex === 0}
-          className={`p-3 rounded-2xl border transition-all duration-300 flex items-center justify-center ${
-            currentIndex === 0
-              ? "bg-slate-100 text-slate-300 dark:bg-slate-900 dark:text-slate-800 border-slate-200/10 dark:border-slate-800/10 cursor-not-allowed"
-              : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-750 hover:shadow-md cursor-pointer"
-          }`}
+          className="p-3 rounded-2xl border transition-all duration-300 flex items-center justify-center bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-750 hover:shadow-md cursor-pointer"
         >
           <ChevronLeft className="w-5 h-5" />
         </button>
@@ -211,12 +202,7 @@ export default function FlashcardViewer({ cards }: FlashcardViewerProps) {
 
         <button
           onClick={handleNext}
-          disabled={currentIndex === cards.length - 1}
-          className={`p-3 rounded-2xl border transition-all duration-300 flex items-center justify-center ${
-            currentIndex === cards.length - 1
-              ? "bg-slate-100 text-slate-300 dark:bg-slate-900 dark:text-slate-800 border-slate-200/10 dark:border-slate-800/10 cursor-not-allowed"
-              : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-750 hover:shadow-md cursor-pointer"
-          }`}
+          className="p-3 rounded-2xl border transition-all duration-300 flex items-center justify-center bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-750 hover:shadow-md cursor-pointer"
         >
           <ChevronRight className="w-5 h-5" />
         </button>
