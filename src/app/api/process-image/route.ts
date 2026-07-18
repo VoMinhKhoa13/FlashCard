@@ -49,12 +49,12 @@ const responseSchema: Schema = {
             properties: {
               question: {
                 type: SchemaType.STRING,
-                description: "Nội dung câu hỏi trắc nghiệm (bằng tiếng Việt hoặc điền vào chỗ trống tiếng Anh)",
+                description: "Nội dung câu hỏi trắc nghiệm để kiểm tra từ vựng tiếng Anh này (e.g. Câu tiếng Anh khuyết từ cần điền vào chỗ trống, hoặc câu hỏi nghĩa tiếng Việt của từ đó)",
               },
               options: {
                 type: SchemaType.ARRAY,
                 items: { type: SchemaType.STRING },
-                description: "Mảng chứa đúng 4 lựa chọn trắc nghiệm tiếng Việt hoặc tiếng Anh",
+                description: "Mảng chứa đúng 4 lựa chọn trắc nghiệm (tiếng Anh đối với câu điền vào chỗ trống, hoặc nghĩa tiếng Việt đối với câu dịch nghĩa)",
               },
               answerIndex: {
                 type: SchemaType.INTEGER,
@@ -100,7 +100,13 @@ export async function POST(req: NextRequest) {
       base64Data = matches[2];
     }
 
-    const prompt = `Bạn là một trợ lý AI chuyên giảng dạy tiếng Anh TOEIC. Hãy phân tích hình ảnh này và đọc TOÀN BỘ các từ vựng xuất hiện trong bảng danh sách từ vựng. Trích xuất tất cả các từ trong bảng (không bỏ sót bất kỳ từ nào) và định dạng chúng theo đúng Schema đã cho. Hãy đảm bảo mỗi từ đều có đầy đủ thông tin: nghĩa dịch chính xác theo cột NGHĨA trong bảng, phiên âm chuẩn theo cột PHIÊN ÂM, kèm theo câu ví dụ tiếng Anh, bản dịch ví dụ tiếng Việt và một câu hỏi quiz trắc nghiệm tiếng Việt chất lượng cao.`;
+    const prompt = `Bạn là một trợ lý AI chuyên giảng dạy tiếng Anh TOEIC. Hãy phân tích hình ảnh này và đọc TOÀN BỘ các từ vựng xuất hiện trong bảng danh sách từ vựng. Trích xuất tất cả các từ trong bảng (không bỏ sót bất kỳ từ nào) và định dạng chúng theo đúng Schema đã cho. Hãy đảm bảo mỗi từ đều có đầy đủ thông tin: nghĩa dịch chính xác theo cột NGHĨA trong bảng, phiên âm chuẩn theo cột PHIÊN ÂM, kèm theo câu ví dụ tiếng Anh, bản dịch ví dụ tiếng Việt và một câu hỏi quiz trắc nghiệm chất lượng cao.
+
+LƯU Ý ĐẶC BIỆT VỀ CÂU HỎI TRẮC NGHIỆM (QUIZ):
+Câu hỏi trắc nghiệm PHẢI phục vụ việc học từ vựng tiếng Anh của từ đó. TUYỆT ĐỐI KHÔNG tạo câu hỏi và các phương án trả lời hoàn toàn bằng tiếng Việt mà không liên quan gì đến việc nhớ từ tiếng Anh đó (như câu hỏi định nghĩa kiến thức chung). Câu hỏi quiz phải thuộc 1 trong các dạng sau:
+1. Câu tiếng Anh điền vào chỗ trống (e.g. "We need to ______ the new system next month."). 4 lựa chọn (options) phải là 4 từ tiếng Anh (gồm từ vựng đang học và 3 từ gây nhiễu cùng loại).
+2. Hỏi nghĩa của từ tiếng Anh đó (e.g. "Từ 'compile' có nghĩa là gì?"). 4 lựa chọn (options) là 4 nghĩa tiếng Việt khác nhau.
+3. Hỏi từ tiếng Anh tương ứng với nghĩa (e.g. "Từ tiếng Anh nào dưới đây có nghĩa là 'biên soạn'?"). 4 lựa chọn (options) phải là 4 từ tiếng Anh khác nhau.`;
 
     let text = "";
 
