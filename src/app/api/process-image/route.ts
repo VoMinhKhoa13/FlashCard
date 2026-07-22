@@ -81,26 +81,34 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { image } = body; // Base64 image data string
+    const { images } = body; // Array of base64 image data strings
 
-    if (!image) {
+    if (!images || !Array.isArray(images) || images.length === 0) {
       return NextResponse.json(
         { error: "Không tìm thấy dữ liệu hình ảnh được truyền lên" },
         { status: 400 }
       );
     }
 
-    // Extract mime type and clean base64 data
-    const matches = image.match(/^data:([a-zA-Z0-9]+\/[a-zA-Z0-9-.+]+);base64,(.+)$/);
-    let mimeType = "image/jpeg";
-    let base64Data = image;
+    // Build inlineData parts for each image
+    const imageParts = images.map((image: string) => {
+      const matches = image.match(/^data:([a-zA-Z0-9]+\/[a-zA-Z0-9-.+]+);base64,(.+)$/);
+      let mimeType = "image/jpeg";
+      let base64Data = image;
 
-    if (matches && matches.length === 3) {
-      mimeType = matches[1];
-      base64Data = matches[2];
-    }
+      if (matches && matches.length === 3) {
+        mimeType = matches[1];
+        base64Data = matches[2];
+      }
 
-    const prompt = `Bạn là một trợ lý AI chuyên giảng dạy tiếng Anh TOEIC. Hãy phân tích hình ảnh này và đọc TOÀN BỘ các từ vựng xuất hiện trong bảng danh sách từ vựng. Trích xuất tất cả các từ trong bảng (không bỏ sót bất kỳ từ nào) và định dạng chúng theo đúng Schema đã cho. Hãy đảm bảo mỗi từ đều có đầy đủ thông tin: nghĩa dịch chính xác theo cột NGHĨA trong bảng, phiên âm chuẩn theo cột PHIÊN ÂM, kèm theo câu ví dụ tiếng Anh, bản dịch ví dụ tiếng Việt và một câu hỏi quiz trắc nghiệm chất lượng cao.
+      return { inlineData: { data: base64Data, mimeType } };
+    });
+
+    const imageCountNote = images.length > 1
+      ? `Bạn được cung cấp ${images.length} hình ảnh liên tiếp thuộc CÙNG MỘT bài học. Hãy đọc TOÀN BỘ từ vựng trên TẤT CẢ các trang và gộp chúng vào chung một danh sách cards duy nhất. Không lặp lại từ nếu đã xuất hiện ở trang trước.`
+      : `Hãy phân tích hình ảnh này và đọc TOÀN BỘ các từ vựng xuất hiện trong bảng danh sách từ vựng.`;
+
+    const prompt = `Bạn là một trợ lý AI chuyên giảng dạy tiếng Anh TOEIC. ${imageCountNote} Trích xuất tất cả các từ trong bảng (không bỏ sót bất kỳ từ nào) và định dạng chúng theo đúng Schema đã cho. Hãy đảm bảo mỗi từ đều có đầy đủ thông tin: nghĩa dịch chính xác theo cột NGHĨA trong bảng, phiên âm chuẩn theo cột PHIÊN ÂM, kèm theo câu ví dụ tiếng Anh, bản dịch ví dụ tiếng Việt và một câu hỏi quiz trắc nghiệm chất lượng cao.
 
 LƯU Ý ĐẶC BIỆT VỀ CÂU HỎI TRẮC NGHIỆM (QUIZ):
 Câu hỏi trắc nghiệm PHẢI phục vụ việc học từ vựng tiếng Anh của từ đó. TUYỆT ĐỐI KHÔNG tạo câu hỏi và các phương án trả lời hoàn toàn bằng tiếng Việt mà không liên quan gì đến việc nhớ từ tiếng Anh đó (như câu hỏi định nghĩa kiến thức chung). Câu hỏi quiz phải thuộc 1 trong các dạng sau:
@@ -111,7 +119,7 @@ Câu hỏi trắc nghiệm PHẢI phục vụ việc học từ vựng tiếng A
     let text = "";
 
     try {
-      console.log("Đang thử kết xuất bằng mô hình chính: gemini-2.5-flash...");
+      console.log(`Đang thử kết xuất ${images.length} ảnh bằng mô hình chính: gemini-2.5-flash...`);
       const primaryModel = genAI.getGenerativeModel({
         model: "gemini-2.5-flash",
         generationConfig: {
@@ -121,12 +129,7 @@ Câu hỏi trắc nghiệm PHẢI phục vụ việc học từ vựng tiếng A
       });
 
       const result = await primaryModel.generateContent([
-        {
-          inlineData: {
-            data: base64Data,
-            mimeType: mimeType,
-          },
-        },
+        ...imageParts,
         prompt,
       ]);
 
@@ -144,12 +147,7 @@ Câu hỏi trắc nghiệm PHẢI phục vụ việc học từ vựng tiếng A
       });
 
       const result = await fallbackModel.generateContent([
-        {
-          inlineData: {
-            data: base64Data,
-            mimeType: mimeType,
-          },
-        },
+        ...imageParts,
         prompt,
       ]);
 
