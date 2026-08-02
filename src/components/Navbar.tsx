@@ -1,7 +1,7 @@
 "use client";
 
-import React from "react";
-import { BookOpen, Sparkles, FolderOpen, Plus, Trash2 } from "lucide-react";
+import React, { useState, useRef, useEffect } from "react";
+import { BookOpen, FolderOpen, Plus, Trash2, Check, ChevronDown, Layers } from "lucide-react";
 import { Lesson } from "@/data/mockCards";
 
 interface NavbarProps {
@@ -25,7 +25,22 @@ export default function Navbar({
   setIsUploading,
   onDeleteLesson,
 }: NavbarProps) {
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
   const hasLessons = lessons.length > 0;
+  const activeLesson = lessons.find((l) => l.id === activeLessonId);
+
+  // Close dropdown on click outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   return (
     <header className="sticky top-0 z-50 w-full glass-card border-b border-slate-200/50 dark:border-slate-800/40">
@@ -45,23 +60,57 @@ export default function Navbar({
         {hasLessons && (
           <div className="flex items-center gap-2 sm:gap-3 flex-wrap sm:flex-nowrap justify-end">
             
-            {/* Lesson Selector Dropdown */}
-            <div className="flex items-center gap-1.5 bg-slate-100/80 dark:bg-slate-800/85 px-2.5 py-1.5 rounded-xl border border-slate-200/40 dark:border-slate-700/50">
-              <FolderOpen className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
-              <select
-                value={activeLessonId || ""}
-                onChange={(e) => {
-                  setActiveLessonId(e.target.value || null);
-                  setIsUploading(false); // Return to study mode
-                }}
-                className="bg-transparent border-none focus:outline-none text-[11px] sm:text-xs font-bold text-slate-750 dark:text-slate-200 pr-1 cursor-pointer max-w-[100px] sm:max-w-[180px] truncate"
+            {/* Custom Lesson Selector Dropdown */}
+            <div className="relative" ref={dropdownRef}>
+              <button
+                type="button"
+                onClick={() => setIsOpen(!isOpen)}
+                className="flex items-center gap-2 bg-slate-100/90 dark:bg-slate-800/90 hover:bg-slate-200/70 dark:hover:bg-slate-750 px-3 py-1.5 rounded-xl border border-slate-200/50 dark:border-slate-700/60 shadow-sm cursor-pointer transition-all duration-200"
               >
-                {lessons.map((lesson) => (
-                  <option key={lesson.id} value={lesson.id} className="dark:bg-slate-850 dark:text-slate-200">
-                    {lesson.name}
-                  </option>
-                ))}
-              </select>
+                <FolderOpen className="w-4 h-4 text-indigo-500 dark:text-indigo-400 flex-shrink-0" />
+                <span className="text-[11px] sm:text-xs font-bold text-slate-800 dark:text-slate-100 max-w-[120px] sm:max-w-[200px] truncate">
+                  {activeLesson?.name || "Chọn bài học..."}
+                </span>
+                <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`} />
+              </button>
+
+              {/* Custom Popup Menu */}
+              {isOpen && (
+                <div className="absolute right-0 mt-2 w-64 rounded-2xl bg-slate-900/95 dark:bg-[#0b101d]/95 border border-slate-700/80 shadow-2xl backdrop-blur-xl py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
+                  <div className="px-3 py-1.5 border-b border-slate-800 text-[10px] font-extrabold uppercase tracking-wider text-slate-400 flex items-center justify-between">
+                    <span>Danh sách bài học ({lessons.length})</span>
+                    <Layers className="w-3 h-3 text-indigo-400" />
+                  </div>
+
+                  <div className="max-h-60 overflow-y-auto py-1 space-y-0.5 custom-scrollbar">
+                    {lessons.map((lesson) => {
+                      const isActive = lesson.id === activeLessonId;
+                      return (
+                        <button
+                          key={lesson.id}
+                          type="button"
+                          onClick={() => {
+                            setActiveLessonId(lesson.id);
+                            setIsUploading(false);
+                            setIsOpen(false);
+                          }}
+                          className={`w-full px-3 py-2 text-left text-xs font-semibold flex items-center justify-between transition-all duration-150 cursor-pointer ${
+                            isActive
+                              ? "bg-indigo-600/20 text-indigo-300 font-bold"
+                              : "text-slate-300 hover:bg-slate-800/80 hover:text-white"
+                          }`}
+                        >
+                          <div className="flex items-center gap-2 truncate pr-2">
+                            <FolderOpen className={`w-3.5 h-3.5 flex-shrink-0 ${isActive ? "text-indigo-400" : "text-slate-500"}`} />
+                            <span className="truncate">{lesson.name}</span>
+                          </div>
+                          {isActive && <Check className="w-4 h-4 text-indigo-400 flex-shrink-0" />}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Mode Switcher (only shown when not actively uploading) */}

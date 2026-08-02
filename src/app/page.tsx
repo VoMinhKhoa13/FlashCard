@@ -13,6 +13,7 @@ export default function Home() {
   const [activeLessonId, setActiveLessonId] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [mode, setMode] = useState<"study" | "practice" | "quiz">("study");
+  const [isUnmasteredOnly, setIsUnmasteredOnly] = useState(false);
   const [loading, setLoading] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
 
@@ -26,12 +27,16 @@ export default function Home() {
         
         if (cachedLessons) {
           const parsedLessons: Lesson[] = JSON.parse(cachedLessons);
-          setLessons(parsedLessons);
+          const sanitizedLessons = parsedLessons.map((l) => ({
+            ...l,
+            unmasteredCardIds: l.unmasteredCardIds || [],
+          }));
+          setLessons(sanitizedLessons);
           
-          if (cachedActiveId && parsedLessons.some(l => l.id === cachedActiveId)) {
+          if (cachedActiveId && sanitizedLessons.some((l) => l.id === cachedActiveId)) {
             setActiveLessonId(cachedActiveId);
-          } else if (parsedLessons.length > 0) {
-            setActiveLessonId(parsedLessons[0].id);
+          } else if (sanitizedLessons.length > 0) {
+            setActiveLessonId(sanitizedLessons[0].id);
           }
         }
         if (cachedMode === "study" || cachedMode === "practice" || cachedMode === "quiz") {
@@ -68,12 +73,14 @@ export default function Home() {
       name: name,
       createdAt: Date.now(),
       cards: cards,
+      unmasteredCardIds: [],
     };
     
     setLessons((prev) => [...prev, newLesson]);
     setActiveLessonId(newLesson.id);
     setIsUploading(false);
-    setMode("study"); // Default to flashcard view for the new lesson
+    setIsUnmasteredOnly(false);
+    setMode("study");
   };
 
   const handleDeleteActiveLesson = (id: string) => {
@@ -85,14 +92,46 @@ export default function Home() {
       setLessons(updatedLessons);
       
       if (updatedLessons.length > 0) {
-        // Set active lesson to the most recent remaining lesson
         setActiveLessonId(updatedLessons[updatedLessons.length - 1].id);
       } else {
         setActiveLessonId(null);
-        setIsUploading(false); // If no lessons left, default to upload screen
+        setIsUploading(false);
       }
+      setIsUnmasteredOnly(false);
       setMode("study");
     }
+  };
+
+  // Mark a card as unmastered (Add cardId to lesson's unmasteredCardIds)
+  const handleMarkUnmastered = (cardId: string) => {
+    if (!activeLessonId) return;
+    setLessons((prevLessons) =>
+      prevLessons.map((lesson) => {
+        if (lesson.id !== activeLessonId) return lesson;
+        const currentUnmastered = lesson.unmasteredCardIds || [];
+        if (currentUnmastered.includes(cardId)) return lesson;
+        return {
+          ...lesson,
+          unmasteredCardIds: [...currentUnmastered, cardId],
+        };
+      })
+    );
+  };
+
+  // Mark a card as mastered (Remove cardId from lesson's unmasteredCardIds)
+  const handleMarkMastered = (cardId: string) => {
+    if (!activeLessonId) return;
+    setLessons((prevLessons) =>
+      prevLessons.map((lesson) => {
+        if (lesson.id !== activeLessonId) return lesson;
+        const currentUnmastered = lesson.unmasteredCardIds || [];
+        if (!currentUnmastered.includes(cardId)) return lesson;
+        return {
+          ...lesson,
+          unmasteredCardIds: currentUnmastered.filter((id) => id !== cardId),
+        };
+      })
+    );
   };
 
   // Prevent flash or layout shifts during initial client hydration loading
@@ -105,6 +144,15 @@ export default function Home() {
   }
 
   const activeLesson = lessons.find((l) => l.id === activeLessonId);
+  const unmasteredCardIds = activeLesson?.unmasteredCardIds || [];
+  
+  // Filter cards if user toggled "Học từ chưa thuộc"
+  const activeCards = activeLesson
+    ? isUnmasteredOnly
+      ? activeLesson.cards.filter((c) => unmasteredCardIds.includes(c.id))
+      : activeLesson.cards
+    : [];
+
   const hasLessons = lessons.length > 0;
   const showUpload = !hasLessons || isUploading;
 
@@ -118,10 +166,16 @@ export default function Home() {
       {/* Top Navbar */}
       <Navbar
         mode={mode}
-        setMode={setMode}
+        setMode={(m) => {
+          setMode(m);
+          setIsUnmasteredOnly(false);
+        }}
         lessons={lessons}
         activeLessonId={activeLessonId}
-        setActiveLessonId={setActiveLessonId}
+        setActiveLessonId={(id) => {
+          setActiveLessonId(id);
+          setIsUnmasteredOnly(false);
+        }}
         isUploading={isUploading}
         setIsUploading={setIsUploading}
         onDeleteLesson={handleDeleteActiveLesson}
@@ -141,7 +195,16 @@ export default function Home() {
           <div className="w-full transition-all duration-500 ease-in-out">
             {activeLesson && (
               mode === "study" ? (
-                <FlashcardViewer key={`study-${activeLesson.id}`} cards={activeLesson.cards} />
+                <FlashcardViewer
+                  key={`study-${activeLesson.id}-${isUnmasteredOnly ? "unmastered" : "all"}`}
+                  cards={activeCards}
+                  unmasteredCardIds={unmasteredCardIds}
+                  onMarkUnmastered={(cardId) => handleMarkUnmastered(cardId)}
+                  onMarkMastered={(cardId) => handleMarkMastered(cardId)}
+                  isUnmasteredOnly={isUnmasteredOnly}
+                  onToggleUnmasteredOnly={() => setIsUnmasteredOnly(!isUnmasteredOnly)}
+                  totalUnmasteredCount={unmasteredCardIds.length}
+                />
               ) : mode === "practice" ? (
                 <PracticeViewer key={`practice-${activeLesson.id}`} cards={activeLesson.cards} />
               ) : (

@@ -20,6 +20,7 @@ export interface Lesson {
   name: string;
   createdAt: number;
   cards: Card[];
+  unmasteredCardIds?: string[];
 }
 
 export const mockCards: Card[] = [
