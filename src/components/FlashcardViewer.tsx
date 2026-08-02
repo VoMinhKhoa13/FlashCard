@@ -125,7 +125,7 @@ export default function FlashcardViewer({
   const progressPercent = cards.length > 0 ? ((currentIndex + 1) / cards.length) * 100 : 0;
 
   return (
-    <div className="w-full max-w-xl mx-auto flex flex-col items-center gap-5 px-4">
+    <div className="w-full max-w-xl mx-auto flex flex-col items-center gap-3.5 sm:gap-4 px-4">
       
       {/* Top Control Bar */}
       <div className="w-full flex justify-between items-center gap-3">
@@ -293,7 +293,7 @@ export default function FlashcardViewer({
       </div>
 
       {/* Transparent Glass Buttons with Colored Icons (Red X / Green Check) */}
-      <div className="flex items-center justify-center gap-6 mt-1">
+      <div className="flex items-center justify-center gap-6 mt-3 sm:mt-4">
         
         {/* Button X (Chưa thuộc) */}
         <div className="relative group flex flex-col items-center">
@@ -352,7 +352,7 @@ export default function FlashcardViewer({
       </div>
 
       {/* Arrow Navigation Buttons */}
-      <div className="flex items-center gap-6 mt-1">
+      <div className="flex items-center gap-6 mt-6 sm:mt-8">
         <button
           onClick={handlePrev}
           className="p-3 rounded-2xl border transition-all duration-300 flex items-center justify-center bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-750 hover:shadow-md cursor-pointer"

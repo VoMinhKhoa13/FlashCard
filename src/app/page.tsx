@@ -157,7 +157,7 @@ export default function Home() {
   const showUpload = !hasLessons || isUploading;
 
   return (
-    <div className="min-h-screen flex flex-col relative bg-slate-50/50 dark:bg-[#090d16] transition-colors duration-300">
+    <div className="min-h-screen md:h-screen flex flex-col relative bg-slate-50/50 dark:bg-[#090d16] transition-colors duration-300 md:overflow-hidden">
       
       {/* Ambient light background blobs */}
       <div className="absolute top-[-10%] left-[-10%] w-[50vw] h-[50vw] rounded-full bg-indigo-200/30 dark:bg-indigo-900/10 blur-[120px] pointer-events-none" />
@@ -182,7 +182,7 @@ export default function Home() {
       />
 
       {/* Main Content Area */}
-      <main className="flex-1 flex flex-col justify-center py-12 sm:py-16 relative z-10">
+      <main className="flex-1 flex flex-col justify-center py-2 sm:py-3 relative z-10 min-h-0 overflow-y-auto">
         {showUpload ? (
           <UploadZone
             onLessonCreated={handleLessonCreated}
@@ -216,7 +216,7 @@ export default function Home() {
       </main>
 
       {/* Footer */}
-      <footer className="py-6 text-center text-[10px] sm:text-xs text-slate-400 dark:text-slate-500 font-medium select-none z-10">
+      <footer className="py-2 flex-shrink-0 text-center text-[10px] sm:text-xs text-slate-400 dark:text-slate-500 font-medium select-none z-10">
         © 2026 AI Flashcard & Quiz. All rights reserved.
       </footer>
     </div>
